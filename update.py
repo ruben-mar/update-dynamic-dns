@@ -3,19 +3,36 @@
 
 import os
 import subprocess
-import pycurl
 import xmltodict
-import time
+from datetime import datetime, timezone
 
 HOST = "@"
 DOMAINNAME = 'openswiftcodes.com'
 PASSWORD = '8a89fe5dc85345578910d17344d2524d' # From section "DYNAMIC DNS" is https://ap.www.namecheap.com/Domains/DomainControlPanel/openswiftcodes.com/advancedns
+
+def locate_script():
+    script = os.path.realpath(__file__) 
+    print("The path of this script is {}".format(os.path.dirname(script)))
+    os.chdir(os.path.dirname(script))
+    print(os.getcwd())
 
 
 def get_ip(): 
     ifconfig = subprocess.check_output("curl -sS ifconfig.me/ip", shell=True)
     # the output of curl is an object with the class bytes
     return ifconfig.decode()
+
+def fetch_ip():
+    try:
+        with open('log.txt','r') as file: # The rb mode will open the file for binary data reading. 
+            file.seek(-2, os.SEEK_END)
+            while file.read(1) != b'\n':
+                file.seek(-2, os.SEEK_CUR)
+            last_line = file.readline().decode()
+            return last_line
+            
+    except:
+        print("Failed to open and parse the log.")
 
 
 def update_ip(new):
@@ -29,6 +46,9 @@ def update_ip(new):
     else:
         print("Update failed.")
 
+def new_entry(): 
+    # https://thispointer.com/python-how-to-append-a-new-row-to-an-existing-csv-file/
+    pass
 
 # MAIN
 

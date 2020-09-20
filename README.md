@@ -29,7 +29,7 @@ You may need to install pycurl and xmltodic
 
 # 3. Develop
 
-This application requires Python >=3.6 and the project [exif 1.0.0](https://pypi.org/project/exif/).
-- **Found issues?** Then please **file an issue** [here](https://github.com/ruben-mar/Olympus-file-manager/issues).
+This application requires Python >=3.6 and [curl](https://github.com/curl/curl).
+- **Found issues?** Then please **file an issue** [here](https://github.com/ruben-mar/Update-Dynamic-DNS/issues).
 
 
