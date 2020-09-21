@@ -5,6 +5,7 @@ import os
 import subprocess
 import xmltodict
 from datetime import datetime, timezone
+from csv import DictWriter
 
 HOST = "@"
 DOMAINNAME = 'openswiftcodes.com'
@@ -51,6 +52,8 @@ def new_entry():
     pass
 
 # MAIN
+
+# Dictionary {'id': '0001','date':'2020-09-19 18:06:27.389196+00:00','ip':'79.150.249.203'}
 
 ipaddress = get_ip()
 
