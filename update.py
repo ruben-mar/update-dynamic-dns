@@ -25,9 +25,6 @@ def update_ip(new):
     else:
         print("Update failed.")
 
-
-
-
 # MAIN
 
 # Dictionary {'id': '0001','date':'2020-09-19 18:06:27.389196+00:00','ip':'79.150.249.203'}

@@ -9,7 +9,7 @@ from csv import DictWriter
 from collections import deque
 import re
 from datetime import datetime, timezone
-
+from ip import get_ip
 
 # Maximum number of lines of the log file
 MAX = 100
@@ -50,6 +50,7 @@ def count_lines(file):
     else:
         print("{} does not exist or is not csv.".format(file))
 
+
 # TO-DO
 def delete_rows(file):
     if count_lines(file) > 100:
@@ -64,6 +65,7 @@ def autoincremnet_index(file):
         for elem in q:
             index = int(re.split(',',elem)[0])
             return index + 1
+
 
 def fetch_last_ip(file):
     with open(file, 'r') as f:
@@ -91,10 +93,8 @@ locate_script()
 print(os.listdir())
 print(is_csv(FILE))
 total = count_lines(FILE)
-print("The number of lines is {}".format(total))
 timestamp = datetime.now(timezone.utc)
 
-dict = {'id': '0006','date':'2020-09-21 22:39:57.321836+00:00','ip':'2.17.39.106'}
+dict = {'id': autoincremnet_index(FILE),'date': timestamp,'ip': get_ip()}
 print()
-# append_line(FILE,dict,FIELDS)
-print(fetch_last_ip(FILE))
+#  append_line(FILE,dict,FIELDS)
