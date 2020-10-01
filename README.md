@@ -22,10 +22,19 @@ as long as they have Python installed.
 
 ## 2.a. Install and run
 Copy the folder containing the files and simply run from your terminal
-`$ python updateIP.py`
+`$ python update.py`
 You may need to install pycurl and xmltodic
 `$ sudo apt install python-pycurl`
 `$ pip install xmltodic`
+
+## 2.b. Crontab
+Schedule a regular run of the utility cron at fixed times, dates, or intervals. You can use the command crontab in Unix-like computer operating systems.
+`$ crontab -e`
+Intervals of time and days when to run the application
+Command To Execute: path of the python command followed by path of the application
+Example of line that runs the aplication every 15 minutes of all hours and days of the week:
+`*/15 * * * 0-6 /home/bu/anaconda3/bin/python /home/bu/ruben/applications/Update-Dynamic-DNS/update.py >/dev/null 2>&1`
+
 
 # 3. Develop
 
