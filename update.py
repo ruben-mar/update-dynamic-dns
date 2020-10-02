@@ -1,28 +1,38 @@
 # script to update the external DNS address
 # https://www.namecheap.com/support/knowledgebase/article.aspx/29/11/how-do-i-use-a-browser-to-dynamically-update-the-hosts-ip
 
+import subprocess
 import os
+import fnmatch
 import subprocess
 import xmltodict
 import csv
 import io
-import fnmatch
+import re
 from csv import DictWriter
 from collections import deque
-import re
 from datetime import datetime, timezone
-from ip import get_router_ip
 
 
-HOST = "@"
 DOMAINNAME = 'blissaporter.com'
 PASSWORD = '88d984714afe41338805e533d9a7e131'
 FIELDS = ['id', 'date', 'ip']
+MAX = 100 # Maximum number of lines of the log file
+FILE = 'log/ip-log.csv'
 
 
-# Maximum number of lines of the log file
-MAX = 100
-FILE = 'data/records.csv'
+# Host is the computer running this application
+def get_host_ip(): 
+    ifconfig = subprocess.check_output("curl -sS ifconfig.me/ip", shell=True)
+    # the output of curl is an object with the class bytes
+    return ifconfig.decode()
+
+
+# Domain is the domain name whose A + Dynamic DNS Record needs updating
+def get_domain_ip():
+    host_ip = subprocess.check_output("host '+DOMAINNAME+' | grep 'has\ address' | sed 's/blissaporter\.com has address //g'", shell=True)
+    return host_ip.decode().rstrip()
+
 
 # Let's make sure that FILE will be found
 def locate_script():
@@ -30,13 +40,13 @@ def locate_script():
     os.chdir(os.path.dirname(script))
 
 
-def is_csv(file): # Actually this only verifies that the extension of the file name is .csv
+def has_csv_extension(file): # Actually this only verifies that the extension of the file name is .csv
     return fnmatch.fnmatch(file.split('.',maxsplit=1)[1], 'csv')
 
 
 # parse csv files https://realpython.com/python-csv/
 def count_lines(file):
-    if os.path.exists(file) and is_csv(file):
+    if os.path.exists(file) and has_csv_extension(file):
         with open(file) as input:
             try: 
                 file_content = csv.reader(input)
@@ -59,7 +69,7 @@ def count_lines(file):
 
 # TO-DO
 def delete_rows(file):
-    if count_lines(file) > 100:
+    if count_lines(file) > MAX:
     # Maximum number of lines of the log file
     # https://thispointer.com/python-how-to-delete-specific-lines-in-a-file-in-a-memory-efficient-way/
        print("Not implemented yet")
@@ -74,10 +84,13 @@ def autoincrement_index(file):
 
 
 def fetch_last_ip(file):
+    print(file)
     with open(file, 'r') as f:
         q = deque(f, 1)  # replace 1 lines read at the end
+        print(q)
         for elem in q:
-            last_ip = re.split(',',elem)[2]
+            print(elem)
+            last_ip = re.split(',',elem)
             return last_ip
 
 
@@ -88,24 +101,22 @@ def append_line(file, dict,fields):
         dict_writer = DictWriter(write_obj, fieldnames=fields)
         # Add dictionary as wor in the csv
         dict_writer.writerow(dict)
-    # print("Appended {} to {}.".format(dict,file))
+    print("Appended {} to {}.".format(dict,file))
 
 
 def new_line():
     timestamp = datetime.now(timezone.utc)
-    dict = {'id': autoincrement_index(FILE),'date': timestamp,'ip': get_router_ip()}
+    dict = {'id': autoincrement_index(FILE),'date': timestamp,'ip': get_host_ip()}
     return dict
 
 
 def update_ip(new):
-    # https://dynamicdns.park-your-domain.com/update?host=[host]&domain=[domain_name]&password=[ddns_password]&ip=[your_ip]
-    url = 'https://dynamicdns.park-your-domain.com/update?host='+HOST+'&domain='+DOMAINNAME+'&password='+PASSWORD+'&ip='+str(new)
+    # https://dynamicdns.park-your-domain.com/update?host=@&domain=[domain_name]&password=[ddns_password]&ip=[your_ip]
+    url = 'https://dynamicdns.park-your-domain.com/update?host=@&domain='+DOMAINNAME+'&password='+PASSWORD+'&ip='+str(new)
     # '-s' keeps curl quiet
     response = subprocess.check_output(['curl', '-s', url]).decode()
     result = xmltodict.parse(response)
-    if result['interface-response']['Done'] == 'true':
-        append_line(FILE,new_line(),FIELDS)
-    else:
+    if result['interface-response']['Done'] != 'true':
         print("Update failed.")
 
 # MAIN
@@ -116,9 +127,10 @@ locate_script()
 
 # Dictionary {'id': '0001','date':'2020-09-19 18:06:27.389196+00:00','ip':'79.150.249.203'}
 
-current_ip_address = get_router_ip()
+current_ip_address = get_host_ip()
 stored_ip_address = fetch_last_ip(FILE).rstrip()
 if current_ip_address != stored_ip_address:
     update_ip(current_ip_address)
+    append_line(FILE,new_line(),FIELDS)
 else:
     print("Nothing to update.")
