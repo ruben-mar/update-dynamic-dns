@@ -30,7 +30,7 @@ def get_host_ip():
 
 # Domain is the domain name whose A + Dynamic DNS Record needs updating
 def get_domain_ip():
-    host_ip = subprocess.check_output("host '+DOMAINNAME+' | grep 'has\ address' | sed 's/blissaporter\.com has address //g'", shell=True)
+    host_ip = subprocess.check_output("host "+DOMAINNAME+" | grep 'has\ address' | sed 's/blissaporter\.com has address //g'", shell=True)
     return host_ip.decode().rstrip()
 
 
@@ -82,15 +82,12 @@ def autoincrement_index(file):
             index = int(re.split(',',elem)[0])
             return index + 1
 
-
-def fetch_last_ip(file):
-    print(file)
+# TO-DO deal with the case of empty last line
+def get_log_ip(file):
     with open(file, 'r') as f:
         q = deque(f, 1)  # replace 1 lines read at the end
-        print(q)
         for elem in q:
-            print(elem)
-            last_ip = re.split(',',elem)
+            last_ip = re.split(',',elem)[2].rstrip()
             return last_ip
 
 
@@ -99,9 +96,8 @@ def append_line(file, dict,fields):
     with open(file, 'a+', newline='') as write_obj:
         # Create a writer object from csv module
         dict_writer = DictWriter(write_obj, fieldnames=fields)
-        # Add dictionary as wor in the csv
+        # Add dictionary as a row in the csv
         dict_writer.writerow(dict)
-    print("Appended {} to {}.".format(dict,file))
 
 
 def new_line():
@@ -110,7 +106,7 @@ def new_line():
     return dict
 
 
-def update_ip(new):
+def update_dns(new):
     # https://dynamicdns.park-your-domain.com/update?host=@&domain=[domain_name]&password=[ddns_password]&ip=[your_ip]
     url = 'https://dynamicdns.park-your-domain.com/update?host=@&domain='+DOMAINNAME+'&password='+PASSWORD+'&ip='+str(new)
     # '-s' keeps curl quiet
@@ -127,10 +123,11 @@ locate_script()
 
 # Dictionary {'id': '0001','date':'2020-09-19 18:06:27.389196+00:00','ip':'79.150.249.203'}
 
-current_ip_address = get_host_ip()
-stored_ip_address = fetch_last_ip(FILE).rstrip()
-if current_ip_address != stored_ip_address:
-    update_ip(current_ip_address)
+current_host_address = get_host_ip()
+current_domain_address = get_domain_ip()
+stored_ip_address = get_log_ip(FILE)
+
+if current_host_address != current_domain_address:
+    update_dns(current_host_address)
     append_line(FILE,new_line(),FIELDS)
-else:
-    print("Nothing to update.")
+
