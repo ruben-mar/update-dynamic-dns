@@ -11,15 +11,12 @@ import io
 import re
 from csv import DictWriter
 from collections import deque
-from datetime import datetime, timezone
-
+from datetime import now, timezone
 
 DOMAINNAME = 'blissaporter.com'
 PASSWORD = '88d984714afe41338805e533d9a7e131'
 FIELDS = ['id', 'date', 'ip']
-MAX = 100 # Maximum number of lines of the log file
 FILE = 'log/ip-log.csv'
-
 
 # Host is the computer running this application
 def get_host_ip(): 
@@ -34,17 +31,16 @@ def get_domain_ip():
     return host_ip.decode().rstrip()
 
 
-# Let's make sure that FILE will be found
+# This makes sure that FILE is in the relative path of the script
 def locate_script():
     script = os.path.realpath(__file__)
     os.chdir(os.path.dirname(script))
 
-
-def has_csv_extension(file): # Actually this only verifies that the extension of the file name is .csv
+# This verifies that the extension of the file name is .csv
+def has_csv_extension(file): 
     return fnmatch.fnmatch(file.split('.',maxsplit=1)[1], 'csv')
 
 
-# parse csv files https://realpython.com/python-csv/
 def count_lines(file):
     if os.path.exists(file) and has_csv_extension(file):
         with open(file) as input:
@@ -67,14 +63,8 @@ def count_lines(file):
         print("{} does not exist or is not csv.".format(file))
 
 
-# TO-DO
-def delete_rows(file):
-    if count_lines(file) > MAX:
-    # Maximum number of lines of the log file
-    # https://thispointer.com/python-how-to-delete-specific-lines-in-a-file-in-a-memory-efficient-way/
-       print("Not implemented yet")
 
-# TO-DO deal with the case of empty last line
+
 def autoincrement_index(file):
     with open(file, 'r') as f:
         q = deque(f, 1)  # replace 1 lines read at the end
@@ -82,8 +72,9 @@ def autoincrement_index(file):
             index = int(re.split(',',elem)[0])
             return index + 1
 
-# TO-DO deal with the case of empty last line
+# This fetches the most recent record of IP address in the log
 def get_log_ip(file):
+    subprocess.check_output("sed -i '/^[[:space:]]*$/d' " + file, shell= True) # Removes all blank lines first
     with open(file, 'r') as f:
         q = deque(f, 1)  # replace 1 lines read at the end
         for elem in q:
@@ -101,7 +92,7 @@ def append_line(file, dict,fields):
 
 
 def new_line():
-    timestamp = datetime.now(timezone.utc)
+    timestamp = datetime.datetime.now(timezone.utc)
     dict = {'id': autoincrement_index(FILE),'date': timestamp,'ip': get_host_ip()}
     return dict
 
@@ -127,7 +118,14 @@ current_host_address = get_host_ip()
 current_domain_address = get_domain_ip()
 stored_ip_address = get_log_ip(FILE)
 
-if current_host_address != current_domain_address:
-    update_dns(current_host_address)
-    append_line(FILE,new_line(),FIELDS)
 
+try:
+    if current_host_address != current_domain_address and current_host_address != stored_ip_address:
+        update_dns(current_host_address)
+        append_line(FILE,new_line(),FIELDS)
+    elif current_host_address == current_domain_address and current_host_address != stored_ip_address:
+        append_line(FILE,new_line(),FIELDS)
+except ValueError:
+    print("The domain address {} has not been updated with the current host {} address".format(current_domain_address, current_host_address))
+finally:
+    pass
