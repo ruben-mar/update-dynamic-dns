@@ -11,12 +11,13 @@ import io
 import re
 from csv import DictWriter
 from collections import deque
-from datetime import now, timezone
+from datetime import datetime, timezone
 
 DOMAINNAME = 'blissaporter.com'
 PASSWORD = '88d984714afe41338805e533d9a7e131'
 FIELDS = ['id', 'date', 'ip']
 FILE = 'log/ip-log.csv'
+MAX = 1000
 
 # Host is the computer running this application
 def get_host_ip(): 
@@ -31,16 +32,16 @@ def get_domain_ip():
     return host_ip.decode().rstrip()
 
 
-# This makes sure that FILE is in the relative path of the script
+# The log is in the relative path of the script for convenience
 def locate_script():
     script = os.path.realpath(__file__)
     os.chdir(os.path.dirname(script))
 
-# This verifies that the extension of the file name is .csv
+# The file name of the log has a .csv extension
 def has_csv_extension(file): 
     return fnmatch.fnmatch(file.split('.',maxsplit=1)[1], 'csv')
 
-
+# Control the size of the log
 def count_lines(file):
     if os.path.exists(file) and has_csv_extension(file):
         with open(file) as input:
@@ -62,8 +63,13 @@ def count_lines(file):
     else:
         print("{} does not exist or is not csv.".format(file))
 
-
-
+# Trim the excess lines of the log
+def trim_log(file):
+    if count_lines(file) > MAX:
+        n = count_lines(file) - MAX 
+        print(n)
+        subprocess.check_output("sed -i '1,"+str(n)+"d' "+ file, shell= True) 
+        print("Knocked {} lines off {}".format(n,file))
 
 def autoincrement_index(file):
     with open(file, 'r') as f:
@@ -72,7 +78,7 @@ def autoincrement_index(file):
             index = int(re.split(',',elem)[0])
             return index + 1
 
-# This fetches the most recent record of IP address in the log
+# The most recent record of IP address in the log
 def get_log_ip(file):
     subprocess.check_output("sed -i '/^[[:space:]]*$/d' " + file, shell= True) # Removes all blank lines first
     with open(file, 'r') as f:
@@ -92,7 +98,7 @@ def append_line(file, dict,fields):
 
 
 def new_line():
-    timestamp = datetime.datetime.now(timezone.utc)
+    timestamp = datetime.now(timezone.utc)
     dict = {'id': autoincrement_index(FILE),'date': timestamp,'ip': get_host_ip()}
     return dict
 
@@ -128,4 +134,4 @@ try:
 except ValueError:
     print("The domain address {} has not been updated with the current host {} address".format(current_domain_address, current_host_address))
 finally:
-    pass
+     trim_log(FILE)
