@@ -11,7 +11,11 @@ import io
 import re
 from csv import DictWriter
 from collections import deque
-from datetime import datetime, timezone
+try: 
+    from datetime import datetime, timezone
+except ImportError:
+    import datetime
+
 
 DOMAINNAME = 'blissaporter.com'
 PASSWORD = '88d984714afe41338805e533d9a7e131'
@@ -20,14 +24,14 @@ FILE = 'log/ip-log.csv'
 MAX = 1000
 
 # Host is the computer running this application
-def get_host_ip(): 
+def get_host_ip() -> int: 
     ifconfig = subprocess.check_output("curl -sS ifconfig.me/ip", shell=True)
     # the output of curl is an object with the class bytes
     return ifconfig.decode()
 
 
 # Domain is the domain name whose A + Dynamic DNS Record needs updating
-def get_domain_ip():
+def get_domain_ip() -> int:
     host_ip = subprocess.check_output("host "+DOMAINNAME+" | grep 'has\ address' | sed 's/blissaporter\.com has address //g'", shell=True)
     return host_ip.decode().rstrip()
 
@@ -37,13 +41,10 @@ def locate_script():
     script = os.path.realpath(__file__)
     os.chdir(os.path.dirname(script))
 
-# The file name of the log has a .csv extension
-def has_csv_extension(file): 
-    return fnmatch.fnmatch(file.split('.',maxsplit=1)[1], 'csv')
 
-# Control the size of the log
-def count_lines(file):
-    if os.path.exists(file) and has_csv_extension(file):
+# Control the size of the logs
+def count_lines(file) -> int:
+    if os.path.exists(file):
         with open(file) as input:
             try: 
                 file_content = csv.reader(input)
@@ -56,20 +57,20 @@ def count_lines(file):
                 raise ex
             except IOError as e:
                 print("Caught the I/O error.")
-                raise ex
+                raise e
             except:
                 # In case of any unhandled error, throw it away
                 raise
     else:
-        print("{} does not exist or is not csv.".format(file))
+        print("There is a problem with {} or it does not exist.".format(file))
+
 
 # Trim the excess lines of the log
 def trim_log(file):
     if count_lines(file) > MAX:
         n = count_lines(file) - MAX 
-        print(n)
         subprocess.check_output("sed -i '1,"+str(n)+"d' "+ file, shell= True) 
-        print("Knocked {} lines off {}".format(n,file))
+        return [file, n]
 
 def autoincrement_index(file):
     with open(file, 'r') as f:
@@ -78,8 +79,9 @@ def autoincrement_index(file):
             index = int(re.split(',',elem)[0])
             return index + 1
 
+
 # The most recent record of IP address in the log
-def get_log_ip(file):
+def get_log_ip(file) -> str:
     subprocess.check_output("sed -i '/^[[:space:]]*$/d' " + file, shell= True) # Removes all blank lines first
     with open(file, 'r') as f:
         q = deque(f, 1)  # replace 1 lines read at the end
@@ -97,7 +99,7 @@ def append_line(file, dict,fields):
         dict_writer.writerow(dict)
 
 
-def new_line():
+def new_line() -> dict: # Dictionary {'id': '0001','date':'2020-09-19 18:06:27.389196+00:00','ip':'79.150.249.203'}
     timestamp = datetime.now(timezone.utc)
     dict = {'id': autoincrement_index(FILE),'date': timestamp,'ip': get_host_ip()}
     return dict
@@ -116,9 +118,6 @@ def update_dns(new):
 
 locate_script()
 
-# total = count_lines(FILE)
-
-# Dictionary {'id': '0001','date':'2020-09-19 18:06:27.389196+00:00','ip':'79.150.249.203'}
 
 current_host_address = get_host_ip()
 current_domain_address = get_domain_ip()
@@ -134,4 +133,12 @@ try:
 except ValueError:
     print("The domain address {} has not been updated with the current host {} address".format(current_domain_address, current_host_address))
 finally:
-     trim_log(FILE)
+    if trim_log(FILE):
+        trimmed = trim_log(FILE)
+        print("Knocked {} lines off {}".format(trimmed[0],trimmed[1]))
+    elif trim_log('log/cron-log.txt'):
+        trimmed = trim_log('log/cron-log.txt')
+        print("Knocked {} lines off {}".format(trimmed[0],trimmed[1]))
+    else:
+        print("Successful run of {} at {}".format(__file__,datetime.now(timezone.utc)))
+
