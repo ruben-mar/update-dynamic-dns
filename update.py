@@ -17,8 +17,8 @@ except ImportError:
     import datetime
 
 
-DOMAINNAME = 'blissaporter.com'
-PASSWORD = '88d984714afe41338805e533d9a7e131'
+DOMAINNAME = ''
+PASSWORD = ''
 FIELDS = ['id', 'date', 'ip']
 FILE = 'log/ip-log.csv'
 MAX = 1000
@@ -141,4 +141,3 @@ finally:
         print("Knocked {} lines off {}".format(trimmed[0],trimmed[1]))
     else:
         print("Successful run of {} at {}".format(__file__,datetime.now(timezone.utc)))
-
