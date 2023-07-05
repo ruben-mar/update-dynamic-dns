@@ -1,0 +1,25 @@
+{
+      "domains": [
+        {
+          "id": "1",
+          "name": "", # domain name
+          "password": "", # provided by Namecheap
+          "hosts": { # subdomains
+            "subdomain_00":"@",
+            "subdomain_01":"www",
+            "subdomain_02":"",
+            "subdomain_03":"",
+            "subdomain_04":""
+          }
+        },
+        {
+          "id": "2",
+          "name": "", # domain name
+          "password": "", # provided by Namecheap
+          "hosts": { # subdomains
+            "subdomain_00":"@",
+            "subdomain_01":"www"
+          }
+        }
+      ]
+}

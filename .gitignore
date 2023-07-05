@@ -1,0 +1,6 @@
+__pycache__
+__pycache__/*.pyc
+log/ip-log.csv
+log/cron-log.csv
+__pycache__/internet_connection.cpython-310.pyc
+log/cron-log.txt
